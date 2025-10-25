@@ -1,15 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../api/authApi";
-import {
-  Users,
-  Mail,
-  Lock,
-  AlertCircle,
-  Eye,
-  EyeOff,
-  Loader2,
-} from "lucide-react";
+import { Users, Mail, Lock, AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -50,32 +42,33 @@ export default function Login() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const payload = {
+        email: formData.email,
+        password: formData.password,
+      };
+
+      console.log("Login payload:", payload);
+      console.log("Using API URL:", `${API_BASE_URL}/api/auth/login`);
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "include",
       });
 
       const data = await response.json();
+      console.log("Login response:", data);
 
       if (!response.ok) {
-        throw new Error(data.error || "Login failed");
+        // Show detailed API error
+        const apiError = data.error || data.message || `Login failed (${response.status})`;
+        throw new Error(apiError);
       }
 
-      console.log("Login successful:", data);
       const { user, token } = data.data;
-
-      // NOTE: In production, uncomment these lines to use localStorage
-      // const tokenExpiry = formData.rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
-
-      // localStorage.setItem('tokenExpiry', Date.now() + tokenExpiry);
 
       const dashboardRoutes = {
         organiser: "/organiser/dashboard",
@@ -83,21 +76,9 @@ export default function Login() {
         speaker: "/speaker/dashboard",
       };
 
-      
-
-      const redirectPath = dashboardRoutes[user.role] || "/";
-      navigate(redirectPath);
-
-      // Optionally store token and user in localStorage
-
-      // alert(
-      //   `Login successful! Welcome ${user.username}!\n\nRole: ${user.role}\nRedirecting to: ${redirectPath}\n\n(In production, this would redirect automatically)`
-      // );
-
-      navigate(redirectPath);
-
-      // In production: window.location.href = redirectPath;
+      navigate(dashboardRoutes[user.role] || "/");
     } catch (err) {
+      console.error("Login error:", err);
       setError(err.message || "An error occurred during login");
     } finally {
       setLoading(false);
@@ -106,22 +87,12 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-        <div
-          className="absolute bottom-0 left-0 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-      </div>
-
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-4 shadow-lg">
             <Users className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome Back
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
           <p className="text-gray-600">Sign in to your EventConnect account</p>
         </div>
 
@@ -138,10 +109,7 @@ export default function Login() {
             )}
 
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
               <div className="relative">
@@ -162,10 +130,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -208,17 +173,11 @@ export default function Login() {
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   disabled={loading}
                 />
-                <label
-                  htmlFor="rememberMe"
-                  className="ml-2 block text-sm text-gray-700 cursor-pointer"
-                >
+                <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700 cursor-pointer">
                   Remember me
                 </label>
               </div>
-              <a
-                href="/forgot-password"
-                className="text-sm font-medium text-blue-600 hover:text-blue-500 transition"
-              >
+              <a href="/forgot-password" className="text-sm font-medium text-blue-600 hover:text-blue-500 transition">
                 Forgot password?
               </a>
             </div>
@@ -244,9 +203,7 @@ export default function Login() {
               <div className="w-full border-t border-gray-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">
-                Don't have an account?
-              </span>
+              <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
             </div>
           </div>
 
@@ -261,29 +218,10 @@ export default function Login() {
         </div>
 
         <div className="mt-6 text-center">
-          <a
-            href="/"
-            className="text-sm text-gray-600 hover:text-gray-900 transition"
-          >
+          <a href="/" className="text-sm text-gray-600 hover:text-gray-900 transition">
             ← Back to Home
           </a>
         </div>
-
-        {/* <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800 font-medium mb-2">
-            🔧 Development Info
-          </p>
-          <p className="text-xs text-blue-600 mb-1">
-            API Endpoint:{" "}
-            <code className="bg-blue-100 px-1 rounded">
-              http://localhost:5000/api/auth/login
-            </code>
-          </p>
-          <p className="text-xs text-blue-600">
-            localStorage usage is commented out for Claude.ai. Uncomment in
-            production code.
-          </p>
-        </div> */}
       </div>
     </div>
   );

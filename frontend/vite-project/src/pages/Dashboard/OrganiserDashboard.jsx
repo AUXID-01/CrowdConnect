@@ -12,37 +12,47 @@ import OrganiserProfileOverview from "../../components/dashboard/Organiser/Organ
 import CreateEventForm from "../../components/dashboard/Organiser/CreateEventForm";
 import API_BASE_URL from '../../api/authApi';
 
-
-
 export default function OrganiserDashboard() {
   const [organiser, setOrganiser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem("token");
-      // Fetch organiser profile
-      const profileRes = await fetch(`${API_BASE_URL}/organiser/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const profileJson = await profileRes.json();
-      let organiser = profileJson.data;
-      console.log("🔍 Fetching events for organiser ID:", organiser._id);
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
-      // Fetch events managed by this organiser -- make sure your backend supports this!
-      const eventsRes = await fetch(
-        `${API_BASE_URL}/events?organiserId=${organiser._id}`,
-        {
+      try {
+        // Fetch organiser profile
+        const profileRes = await fetch(`${API_BASE_URL}/api/organiser/me`, {
           headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const eventsJson = await eventsRes.json();
+        });
+        if (!profileRes.ok) throw new Error("Failed to fetch organiser profile");
+        const profileJson = await profileRes.json();
+        const organiserData = profileJson.data || {};
+        console.log("🔍 Organiser profile:", organiserData);
 
-       console.log("📦 Events returned:", eventsJson.data);
-       
-      organiser.eventsOrganized = eventsJson.data;
+        // Fetch events managed by this organiser
+        const eventsRes = await fetch(
+          `${API_BASE_URL}/api/events?organiserId=${organiserData._id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const eventsJson = await eventsRes.json();
+        console.log("📦 Events returned:", eventsJson?.data);
 
-      setOrganiser(organiser);
+        organiserData.eventsOrganized = eventsJson?.data || [];
+        setOrganiser(organiserData);
+      } catch (err) {
+        console.error("Error fetching organiser dashboard data:", err);
+        setOrganiser({});
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
   }, []);
@@ -64,11 +74,21 @@ export default function OrganiserDashboard() {
     );
   }
 
-  if (!organiser) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <span className="text-cyan-400 text-xl">
           Loading your organiser dashboard...
+        </span>
+      </div>
+    );
+  }
+
+  if (!organiser) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <span className="text-red-400 text-xl">
+          Unable to load organiser data. Please log in again.
         </span>
       </div>
     );
@@ -87,25 +107,20 @@ export default function OrganiserDashboard() {
           {/* Main Column */}
           <div className="lg:col-span-2 space-y-6">
             <EventsManaged events={organiser.eventsOrganized || []} />
-            <RegistrationsOverview
-              registrations={organiser.registrations || []}
-            />
+            <RegistrationsOverview registrations={organiser.registrations || []} />
             <OrganiserAnalytics analytics={organiser.analytics || {}} />
             <SpeakerTeamManagement
               team={organiser.team || []}
-              events={organiser.eventsOrganized || []} // ← Make sure this is here
+              events={organiser.eventsOrganized || []}
               pendingInvitations={organiser.pendingInvitations || []}
             />
-
             <EventReports reports={organiser.reports || []} />
           </div>
 
           {/* Right Sidebar */}
           <div className="space-y-6">
             <OrganiserProfileOverview organiser={organiser} />
-            <OrganiserNotifications
-              notifications={organiser.notifications || []}
-            />
+            <OrganiserNotifications notifications={organiser.notifications || []} />
           </div>
         </div>
       </div>

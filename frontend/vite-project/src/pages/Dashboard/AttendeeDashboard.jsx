@@ -18,48 +18,63 @@ export default function AttendeeDashboard() {
     past: [],
     calendar: [],
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     // Fetch attendee profile
     async function fetchAttendee() {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE_URL}/attendee/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json();
-      if (json.success) {
-        const attendeeData = json.data;
-        // Add a stats property containing the eventsRegistered count
-        const stats = {
-          eventsRegistered: attendeeData.registeredEvents
-            ? attendeeData.registeredEvents.length
-            : 0,
-          connections: attendeeData.connections
-            ? attendeeData.connections.length
-            : 0,
-          profileComplete: attendeeData.profileComplete || 0, // Adjust this to your logic if needed
-        };
-        setAttendee({ ...attendeeData, stats });
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/attendee/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to fetch attendee profile");
+
+        const json = await res.json();
+        if (json.success) {
+          const attendeeData = json.data;
+          const stats = {
+            eventsRegistered: attendeeData.registeredEvents?.length || 0,
+            connections: attendeeData.connections?.length || 0,
+            profileComplete: attendeeData.profileComplete || 0,
+          };
+          setAttendee({ ...attendeeData, stats });
+        }
+      } catch (err) {
+        console.error(err);
       }
     }
 
-    // Fetch events (example endpoint—replace with your actual events endpoint)
+    // Fetch events
     async function fetchEvents() {
-      const res = await fetch(`${API_BASE_URL}/events`);
-      const json = await res.json();
-      if (json.success)
-        setEventData({
-          upcoming: json.data,
-          recommended: [],
-          past: [],
-          calendar: [],
-        });
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/events`);
+        if (!res.ok) throw new Error("Failed to fetch events");
+
+        const json = await res.json();
+        if (json.success) {
+          setEventData({
+            upcoming: json.data || [],
+            recommended: [],
+            past: [],
+            calendar: [],
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
-    fetchAttendee();
-    fetchEvents();
+
+    Promise.all([fetchAttendee(), fetchEvents()]).finally(() => setLoading(false));
   }, []);
 
-  if (!attendee) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <span className="text-cyan-400 text-xl">Loading your dashboard…</span>
@@ -67,15 +82,25 @@ export default function AttendeeDashboard() {
     );
   }
 
+  if (!attendee) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <span className="text-red-400 text-xl">
+          Unable to load attendee profile. Please log in again.
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Welcome Banner - Full Width */}
+        {/* Welcome Banner */}
         <WelcomeBanner user={attendee} />
 
         {/* Main Dashboard Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left/Main Column - Takes 2 columns on large screens */}
+          {/* Left/Main Column */}
           <div className="lg:col-span-2 space-y-6">
             <QuickActions />
             <UpcomingEvents events={eventData.upcoming || []} />
@@ -83,11 +108,12 @@ export default function AttendeeDashboard() {
             <EventRecommendations events={eventData.recommended || []} />
             <PastEvents pastEvents={eventData.past || []} />
           </div>
+
           {/* Right Sidebar */}
           <div className="space-y-6">
-            <ProfileOverview user={attendee} />
-            <Notifications notifications={attendee.notifications || []} />
-            <Connections connections={attendee.connections || []} />
+            <ProfileOverview user={attendee || {}} />
+            <Notifications notifications={attendee?.notifications || []} />
+            <Connections connections={attendee?.connections || []} />
           </div>
         </div>
       </div>

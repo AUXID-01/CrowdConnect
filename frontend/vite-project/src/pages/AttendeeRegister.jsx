@@ -57,7 +57,6 @@ export default function AttendeeRegister() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
     const newErrors = {};
     if (!formData.username) newErrors.username = "Username is required";
     if (!formData.email) newErrors.email = "Email is required";
@@ -71,27 +70,26 @@ export default function AttendeeRegister() {
       return;
     }
 
-    // Prepare data for backend
+    // Flattened registration data for backend
     const registrationData = {
       username: formData.username,
       email: formData.email,
       password: formData.password,
       bio: formData.bio,
       role: "attendee",
-      attendeeDetails: {
-        isStudent: formData.isStudent,
-        occupation: formData.occupation,
-        company: formData.company,
-        interests: formData.interests,
-      },
+      isStudent: formData.isStudent,
+      occupation: formData.occupation,
+      company: formData.company,
+      interests: formData.interests,
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registrationData),
       });
+
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "Registration failed");
@@ -120,8 +118,8 @@ export default function AttendeeRegister() {
           onSubmit={handleSubmit}
           className="bg-gray-800 rounded-2xl p-8 border border-gray-700"
         >
-          {/* Basic Info */}
           <div className="space-y-6">
+            {/* Username */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Username *
@@ -142,6 +140,7 @@ export default function AttendeeRegister() {
               )}
             </div>
 
+            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Email *
@@ -162,6 +161,7 @@ export default function AttendeeRegister() {
               )}
             </div>
 
+            {/* Password */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Password *
@@ -182,6 +182,7 @@ export default function AttendeeRegister() {
               )}
             </div>
 
+            {/* Confirm Password */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Confirm Password *
@@ -204,6 +205,7 @@ export default function AttendeeRegister() {
               )}
             </div>
 
+            {/* Bio */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Bio
@@ -315,12 +317,10 @@ export default function AttendeeRegister() {
             </div>
           </div>
 
-          {/* Insert error display just before the submit button */}
           {errors.api && (
             <div className="text-red-400 text-center mt-4">{errors.api}</div>
           )}
 
-          {/* Submit Button */}
           <button
             type="submit"
             className="w-full mt-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-lg transition-all transform hover:scale-105"
