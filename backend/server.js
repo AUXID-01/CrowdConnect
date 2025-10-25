@@ -14,22 +14,33 @@ dotenv.config();
 // Initialize express app
 const app = express();
 
+// ---------------- CORS CONFIGURATION ----------------
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',                  // Local dev
+    'https://crowd-connect-delta.vercel.app'  // ✅ Your production frontend
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+// ✅ Apply CORS first (before any other middleware)
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+  // Handle preflight requests
+// ----------------------------------------------------
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  origin: [
-    'http://localhost:5173',  // Local development
-    'https://crowd-connect-delta.vercel.app'  // Production frontend
-  ],
-  credentials: true
-}));
 
-
-// Database connection
+// ---------------- DATABASE CONNECTION ----------------
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/crowdconnect');
+    const conn = await mongoose.connect(
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/crowdconnect'
+    );
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`❌ Database connection error: ${error.message}`);
@@ -39,8 +50,9 @@ const connectDB = async () => {
 
 // Connect to database
 connectDB();
+// ----------------------------------------------------
 
-// Routes
+// ---------------- ROUTES ----------------
 app.use('/api/auth', authRoutes);
 app.use('/api/organiser', organiserRoutes);
 app.use('/api/attendee', attendeeRoutes);
@@ -72,8 +84,9 @@ app.get('/', (req, res) => {
     }
   });
 });
+// ----------------------------------------------------
 
-// 404 handler for API routes
+// 404 handler for undefined routes
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -84,7 +97,6 @@ app.use((req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
-  
   res.status(err.statusCode || 500).json({
     success: false,
     message: err.message || 'Internal server error',
@@ -92,7 +104,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
+// ---------------- START SERVER ----------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
