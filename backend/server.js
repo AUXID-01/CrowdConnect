@@ -8,107 +8,67 @@ import organiserRoutes from './routes/organiser.routes.js';
 import speakerRoutes from './routes/speaker.routes.js';
 import eventRoutes from "./routes/event.routes.js";
 
-// Load environment variables
 dotenv.config();
-
-// Initialize express app
 const app = express();
 
-// ---------------- CORS CONFIGURATION ----------------
+// ✅ CORS setup
 const corsOptions = {
   origin: [
-    'http://localhost:5173',                  // Local dev
-    'https://crowd-connect-delta.vercel.app'  // ✅ Your production frontend
+    'http://localhost:5173',
+    'https://crowd-connect-two.vercel.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-// ✅ Apply CORS first (before any other middleware)
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
-  // Handle preflight requests
-// ----------------------------------------------------
+app.options(/.*/, cors(corsOptions));// ✅ Express 5 compatible
 
-// Middleware
+// ✅ Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ---------------- DATABASE CONNECTION ----------------
+// ✅ Connect to MongoDB
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(
-      process.env.MONGODB_URI || 'mongodb://localhost:27017/crowdconnect'
-    );
+    const conn = await mongoose.connect(process.env.MONGODB_URI);
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error(`❌ Database connection error: ${error.message}`);
+  } catch (err) {
+    console.error(`❌ MongoDB connection error: ${err.message}`);
     process.exit(1);
   }
 };
-
-// Connect to database
 connectDB();
-// ----------------------------------------------------
 
-// ---------------- ROUTES ----------------
+// ✅ Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/organiser', organiserRoutes);
 app.use('/api/attendee', attendeeRoutes);
 app.use('/api/speaker', speakerRoutes);
 app.use('/api/events', eventRoutes);
 
-// Health check route
+// ✅ Health check
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is running',
-    timestamp: new Date().toISOString()
-  });
+  res.status(200).json({ success: true, message: 'Server running' });
 });
 
-// Root route
-app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'CrowdConnect API',
-    version: '1.0.0',
-    endpoints: {
-      health: '/api/health',
-      auth: {
-        register: 'POST /api/auth/register',
-        login: 'POST /api/auth/login',
-        getProfile: 'GET /api/auth/me'
-      }
-    }
-  });
-});
-// ----------------------------------------------------
-
-// 404 handler for undefined routes
+// ✅ 404 handler
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.method} ${req.url} not found`
-  });
+  res.status(404).json({ success: false, message: `Route ${req.url} not found` });
 });
 
-// Global error handler
+// ✅ Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
   res.status(err.statusCode || 500).json({
     success: false,
-    message: err.message || 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    message: err.message || 'Internal Server Error'
   });
 });
 
-// ---------------- START SERVER ----------------
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 export default app;
