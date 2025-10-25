@@ -1,10 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL; // ✅ Changed this line
+const API_BASE_URL = import.meta.env.VITE_API_URL; // your backend base URL
 
 export default API_BASE_URL;
 
-// ✅ Register a new user
+// Register a new user
 export const registerUser = async (formData) => {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, { // ✅ Added /auth
+  const response = await fetch(`${API_BASE_URL}/api/auth/register`, { // ✅ added /api
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -14,9 +14,9 @@ export const registerUser = async (formData) => {
   return response.json();
 };
 
-// ✅ Login
+// Login
 export const loginUser = async (credentials) => {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, { // ✅ Added /auth
+  const response = await fetch(`${API_BASE_URL}/api/auth/login`, { // ✅ added /api
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -26,9 +26,9 @@ export const loginUser = async (credentials) => {
   return response.json();
 };
 
-// ✅ Get current user profile (requires token)
+// Get current user profile
 export const getCurrentUser = async (token) => {
-  const response = await fetch(`${API_BASE_URL}/auth/me`, { // ✅ Added /auth
+  const response = await fetch(`${API_BASE_URL}/api/auth/me`, { // ✅ added /api
     headers: {
       Authorization: `Bearer ${token}`,
     },
